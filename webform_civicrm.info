@@ -1,6 +1,6 @@
 name = Webform CiviCRM Integration
 description = A powerful, flexible, user-friendly form builder for CiviCRM.
-version = 5.3.1
+version = 5.3.2
 core = 7.x
 package = CiviCRM
 php = 7.0
