@@ -390,16 +390,18 @@ class wf_crm_webform_preprocess extends wf_crm_webform_base {
         break;
       }
       $type = $membership['membership_type_id'];
-      $msg = t('@type membership for @contact has a status of "@status".', [
-        '@type' => $this->getMembershipTypeField($type, 'name'),
-        '@contact' => $this->info['contact'][$c]['contact'][1]['display_name'],
-        '@status' => $membership['status'],
-      ]);
-      if (!empty($membership['end_date'])) {
-        $end = ['@date' => CRM_Utils_Date::customFormat($membership['end_date'])];
-        $msg .= ' ' . ($membership['end_date'] > $today ? t('Expires @date.', $end) : t('Expired @date.', $end));
+      if(empty($this->settings["membership_hide_status_msg"])){
+        $msg = t('@type membership for @contact has a status of "@status".', [
+          '@type' => $this->getMembershipTypeField($type, 'name'),
+          '@contact' => $this->info['contact'][$c]['contact'][1]['display_name'],
+          '@status' => $membership['status'],
+        ]);
+        if (!empty($membership['end_date'])) {
+          $end = ['@date' => CRM_Utils_Date::customFormat($membership['end_date'])];
+          $msg .= ' ' . ($membership['end_date'] > $today ? t('Expires @date.', $end) : t('Expired @date.', $end));
+        }
+        $this->setMessage($msg);
       }
-      $this->setMessage($msg);
       for ($n = 1; $n <= $this->data['membership'][$c]['number_of_membership']; ++$n) {
         $fid = "civicrm_{$c}_membership_{$n}_membership_membership_type_id";
         if (empty($info['membership'][$c]['membership'][$n]) && ($this->getData($fid) == $type ||

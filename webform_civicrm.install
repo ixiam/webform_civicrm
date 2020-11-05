@@ -114,6 +114,13 @@ function webform_civicrm_schema() {
         'not null' => TRUE,
         'default' => 0,
       ],
+      'membership_hide_status_msg' => [
+        'description' => 'Hide Membership status message in Webforms',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
     ],
     'primary key' => ['nid'],
   ];
@@ -852,4 +859,13 @@ function webform_civicrm_update_7404() {
     'default' => 0,
   ];
   db_add_field('webform_civicrm_forms', 'membership_type_action', $field);
+
+  $field = [
+    'description' => 'Hide Membership status message in Webforms',
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => TRUE,
+    'default' => 0,
+  ];
+  db_add_field('webform_civicrm_forms', 'membership_hide_status_msg', $field);
 }

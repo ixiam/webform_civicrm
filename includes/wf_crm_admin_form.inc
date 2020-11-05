@@ -1199,6 +1199,12 @@ class wf_crm_admin_form {
         'style' => 'max-width: 450px;'
       ],
     ];
+    $this->form['options']['membership_hide_status_msg'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Hide Membership Status message'),
+      '#default_value' => !empty($this->settings['membership_hide_status_msg']),
+      '#description' => t('If checked, do not show the Membership Status message when User accesses the Webform.'),
+    ];
   }
 
   /**
