@@ -1957,6 +1957,9 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       $paymentProcessor->setSuccessUrl($this->getIpnRedirectUrl('success'));
       $paymentProcessor->setCancelUrl($this->getIpnRedirectUrl('cancel'));
     }
+    
+    $params['webform_redirect_cancel'] = $this->getIpnRedirectUrl('cancel');
+    $params['webform_redirect_success'] = $this->getIpnRedirectUrl('success');
 
     if (method_exists($paymentProcessor, 'doTransferCheckout')) {
       //Paypal Express checkout
@@ -2025,7 +2028,7 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
     $params['financial_type_id'] = $this->contribution_page['financial_type_id'];
     $params['currency'] = $params['currencyID'] = $this->contribution_page['currency'];
     $params['skipRecentView'] = $params['skipLineItem'] = 1;
-    $params['contact_id'] = $this->ent['contact'][1]['id'];
+    $params['contact_id'] = $this->data['contribution'][1]['contribution'][1]['contact_id'];
     $params['total_amount'] = round($this->totalContribution, 2);
 
     // Most payment processors expect this (normally be set by contribution page processConfirm)

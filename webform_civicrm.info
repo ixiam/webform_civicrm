@@ -1,5 +1,6 @@
 name = Webform CiviCRM Integration
-description = A powerful, flexible, user-friendly form builder for CiviCRM.
+description = A powerful, flexible, user-friendly form builder for CiviCRM. (iXiam's fork)
+version = 5.3.1
 core = 7.x
 package = CiviCRM
 php = 7.0

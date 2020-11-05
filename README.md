@@ -1,6 +1,8 @@
 Webform CiviCRM
 ===============
 
+**IMPORTANT:**  This is a fork developed by iXiam from original [webform_civicrm](https://github.com/colemanw/webform_civicrm/) module on branch `7.x-5.x`.
+
 Webform CiviCRM is a powerful, flexible, user-friendly form builder for CiviCRM.
 
 Installation & Getting Started
