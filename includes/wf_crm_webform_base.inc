@@ -752,8 +752,9 @@ abstract class wf_crm_webform_base {
   public static function saveDrupalFileToCivi($id) {
     $file = file_load($id);
     if ($file) {
+      $newName = CRM_Utils_File::makeFileName($file->filename);
       $config = CRM_Core_Config::singleton();
-      $path = file_unmanaged_copy($file->uri, $config->customFileUploadDir);
+      $path = file_unmanaged_copy($file->uri, $config->customFileUploadDir . DIRECTORY_SEPARATOR . $newName);
       if ($path) {
         $result = wf_civicrm_api('file', 'create', [
           'uri' => str_replace($config->customFileUploadDir, '', $path),
