@@ -1189,24 +1189,27 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       $result = wf_civicrm_api('membership', 'create', $params);
 
       if (!empty($result['id'])) {
-        // Issue #2516924 If existing membership create renewal activity
-        if (!empty($params['id'])) {
-          $membership = $result['values'][$result['id']];
-          $actParams = [
-            'source_contact_id' => $cid,
-            'activity_type_id' => 'Membership Renewal',
-            'target_id' => $cid,
-          ];
-          $memType = wf_civicrm_api('MembershipType', 'getsingle', ['id' => $membership['membership_type_id']]);
-          $memStatus = wf_civicrm_api('MembershipStatus', 'getsingle', ['id' => $membership['status_id']]);
-          $actParams['subject'] = ts("%1 - Status: %2", [1 => $memType['name'], 2 => $memStatus['label']]);
-          wf_civicrm_api('Activity', 'create', $actParams);
-        }
+        // If settings to create Renewal Activity
+        if(wf_crm_aval($this->data, "membership:$c:details", ['create_renewal_activity'], TRUE)){
+          // Issue #2516924 If existing membership create renewal activity
+          if (!empty($params['id'])) {
+            $membership = $result['values'][$result['id']];
+            $actParams = [
+              'source_contact_id' => $cid,
+              'activity_type_id' => 'Membership Renewal',
+              'target_id' => $cid,
+            ];
+            $memType = wf_civicrm_api('MembershipType', 'getsingle', ['id' => $membership['membership_type_id']]);
+            $memStatus = wf_civicrm_api('MembershipStatus', 'getsingle', ['id' => $membership['status_id']]);
+            $actParams['subject'] = ts("%1 - Status: %2", [1 => $memType['name'], 2 => $memStatus['label']]);
+            wf_civicrm_api('Activity', 'create', $actParams);
+          }
 
-        foreach ($this->line_items as &$item) {
-          if ($item['element'] == "civicrm_{$c}_membership_{$n}") {
-            $item['membership_id'] = $result['id'];
-            break;
+          foreach ($this->line_items as &$item) {
+            if ($item['element'] == "civicrm_{$c}_membership_{$n}") {
+              $item['membership_id'] = $result['id'];
+              break;
+            }
           }
         }
       }
@@ -1959,7 +1962,7 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       $paymentProcessor->setSuccessUrl($this->getIpnRedirectUrl('success'));
       $paymentProcessor->setCancelUrl($this->getIpnRedirectUrl('cancel'));
     }
-    
+
     $params['webform_redirect_cancel'] = $this->getIpnRedirectUrl('cancel');
     $params['webform_redirect_success'] = $this->getIpnRedirectUrl('success');
 
