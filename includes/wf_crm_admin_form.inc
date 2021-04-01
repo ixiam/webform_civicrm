@@ -981,6 +981,17 @@ class wf_crm_admin_form {
           '#attributes' => ['id' => $fs, 'class' => ['web-civi-checkbox-set']],
           'js_select' => $this->addToggle($fs),
         ];
+        $this->form['membership'][$c]['membership'][$fs]['membership_settings'] = [
+          '#type' => 'fieldset',
+          '#title' => t('Membership Settings'),
+        ];
+        $this->form['membership'][$c]['membership'][$fs]['membership_settings']["membership_{$n}_settings_details"] = [
+          '#type' => 'checkboxes',
+          '#options' => [
+            'create_renewal_activity' => t('Create Renewal Activity when updating existing Membership'),
+          ],
+          '#default_value' => wf_crm_aval($this->data, "membership:$n:details", []),
+        ];
         foreach ($this->sets as $sid => $set) {
           if ($set['entity_type'] == 'membership') {
             foreach ($set['fields'] as $fid => $field) {
