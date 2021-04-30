@@ -1198,6 +1198,7 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
               'source_contact_id' => $cid,
               'activity_type_id' => 'Membership Renewal',
               'target_id' => $cid,
+              'source_record_id' => $result['id'],
             ];
             $memType = wf_civicrm_api('MembershipType', 'getsingle', ['id' => $membership['membership_type_id']]);
             $memStatus = wf_civicrm_api('MembershipStatus', 'getsingle', ['id' => $membership['status_id']]);
@@ -1311,17 +1312,30 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
           $this->handleEntityTags('case', $result['id'], $n, $params);
           // Store id
           $this->ent['case'][$n]['id'] = $result['id'];
+          $relationshipStartDate = date('Ymd');
           // Save case roles
           foreach ($params as $param => $val) {
             if ($val && strpos($param, 'role_') === 0) {
               foreach ((array) $params['client_id'] as $client) {
                 foreach ((array) $val as $contactB) {
-                  wf_civicrm_api('relationship', 'create', [
+                  $relationshipParams = [
                     'relationship_type_id' => substr($param, 5),
                     'contact_id_a' => $client,
                     'contact_id_b' => $contactB,
                     'case_id' => $result['id'],
-                  ]);
+                    'is_active' => TRUE,
+                  ];
+                  // We can't create a duplicate relationship so check if active relationship exists first.
+                  $existingRelationships = wf_civicrm_api('relationship', 'get', $relationshipParams);
+                  if (!empty($existingRelationships['count'])) {
+                    // Update the existing active relationship (case role)
+                    $relationshipParams['id'] = reset($existingRelationships['values'])['id'];
+                  }
+                  else {
+                    // We didn't used to set start_date - now we do when creating new relationships (case roles)
+                    $relationshipParams['start_date'] = $relationshipStartDate;
+                  }
+                  wf_civicrm_api('relationship', 'create', $relationshipParams);
                 }
               }
             }
@@ -1994,7 +2008,13 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       $paymentProcessor->doTransferCheckout($params, 'contribute');
     }
     else {
-      $paymentProcessor->doPayment($params);
+      try {
+        $paymentProcessor->doPayment($params);
+      }
+      catch (\Civi\Payment\Exception\PaymentProcessorException $e) {
+        drupal_set_message(ts('Payment approval failed with message: ') . $e->getMessage(),'error');
+        CRM_Utils_System::redirect($this->getIpnRedirectUrl('cancel'));
+      }
     }
 
   }
@@ -2178,11 +2198,6 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
           }
         }
       }
-
-      // Format (and round) monetary values before saving the line items
-      isset($item['unit_price']) ? $item['unit_price'] = CRM_Utils_Money::format($item['unit_price'], NULL, NULL, TRUE) : NULL;
-      isset($item['line_total']) ? $item['line_total'] = CRM_Utils_Money::format($item['line_total'], NULL, NULL, TRUE) : NULL;
-      isset($item['tax_amount']) ? $item['tax_amount'] = CRM_Utils_Money::format($item['tax_amount'], NULL, NULL, TRUE) : NULL;
 
       // Save the line_item
       $line_result = wf_civicrm_api('line_item', 'create', $item);
