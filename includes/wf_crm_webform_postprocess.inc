@@ -161,11 +161,6 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
     // Once all contacts are saved we can fill contact ref fields
     $this->fillContactRefs();
 
-    // Save a non-live transaction
-    if (empty($this->ent['contribution'][1]['id']) && $this->totalContribution) {
-      $this->createDeferredPayment();
-    }
-
     // Create/update other data associated with contacts
     foreach ($this->data['contact'] as $c => $contact) {
       $cid = $this->ent['contact'][$c]['id'];
@@ -205,6 +200,10 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       if ($contact['id'] && isset($this->all_sets['membership']) && !empty($this->data['membership'][$c]['number_of_membership'])) {
         $this->processMemberships($c, $contact['id']);
       }
+    }
+    // Save a non-live transaction // after contributions have been created
+    if (empty($this->ent['contribution'][1]['id']) && $this->totalContribution) {
+      $this->createDeferredPayment();
     }
   }
 
