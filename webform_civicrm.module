@@ -340,6 +340,7 @@ function webform_civicrm_webform_submission_render_alter(&$renderable) {
   // Show labels for hidden (select) fields when submissions are rendered.
   foreach ($renderable['#node']->webform['components'] as $component) {
     if ($component['type'] == 'hidden') {
+      module_load_include('inc', 'webform_civicrm', 'includes/utils');
       $options = wf_crm_field_options($component, 'submission', $renderable['#node']->webform_civicrm['data']);
       if (empty($options)) {
         continue;
