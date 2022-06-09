@@ -2,7 +2,6 @@
 
 namespace Drupal\webform_civicrm;
 
-
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\webform\Entity\Webform;
 use Drupal\Component\Render\FormattableMarkup;
@@ -53,7 +52,7 @@ class AdminForm implements AdminFormInterface {
    *
    * @return object
    */
-  function initialize(array $form, FormStateInterface $form_state, WebformInterface $webform) {
+  public function initialize(array $form, FormStateInterface $form_state, WebformInterface $webform) {
     \Drupal::getContainer()->get('civicrm')->initialize();
     $this->form = $form;
     $this->form_state = $form_state;
@@ -255,8 +254,8 @@ class AdminForm implements AdminFormInterface {
       '#type' => 'details',
       '#title' => $n . '. ' . $this->utils->wf_crm_contact_label($n, $this->data),
       '#markup' => $n > 1 ? NULL : t('<hr/>' . 'Primary contact. Usually assumed to be the person filling out the form.') . '<br />'
-        . t('Enable the "Existing Contact" field to autofill with the current user (or another contact).' . '<br />'
-          . 'Address, Phone, Email, Custom fields for Contacts can also be added to the webform.'. '<hr/>' ),
+      . t('Enable the "Existing Contact" field to autofill with the current user (or another contact).' . '<br />'
+          . 'Address, Phone, Email, Custom fields for Contacts can also be added to the webform.' . '<hr/>'),
       '#group' => 'webform_civicrm',
       '#attributes' => ['class' => ['contact_icon_' . $c['contact'][1]['contact_type']]],
     ];
@@ -374,7 +373,7 @@ class AdminForm implements AdminFormInterface {
               continue;
             }
             // Make sure Primary field is only displayed for the 1st set.
-            if (strpos($fid, 'is_primary') !== false && $i > 1) {
+            if (strpos($fid, 'is_primary') !== FALSE && $i > 1) {
               continue;
             }
             $fid = 'civicrm_' . $n . '_contact_' . $i . '_' . $fid;
@@ -395,7 +394,7 @@ class AdminForm implements AdminFormInterface {
             '#suffix' => '</div>',
             '#options' => [
               WebformCivicrmBase::MULTIVALUE_FIELDSET_MODE_CREATE_OR_EDIT => t('Create/ Edit'),
-              WebformCivicrmBase::MULTIVALUE_FIELDSET_MODE_CREATE_ONLY => t('Create Only')
+              WebformCivicrmBase::MULTIVALUE_FIELDSET_MODE_CREATE_ONLY => t('Create Only'),
             ],
             '#title' => t('Create mode'),
             '#weight' => -1,
@@ -416,10 +415,10 @@ class AdminForm implements AdminFormInterface {
         $rule_field = $this->form['contact_' . $n]['contact_subtype_wrapper']["contact_{$n}_settings_matching_rule"] = [
           '#type' => 'select',
           '#options' => [
-              0 =>t('- None -'),
-              'Unsupervised' => t('Default Unsupervised'),
-              'Supervised' => t('Default Supervised'),
-            ] + $this->utils->wf_crm_get_matching_rules($c['contact'][1]['contact_type']),
+            0 => t('- None -'),
+            'Unsupervised' => t('Default Unsupervised'),
+            'Supervised' => t('Default Supervised'),
+          ] + $this->utils->wf_crm_get_matching_rules($c['contact'][1]['contact_type']),
           '#title' => t('Matching Rule'),
           '#prefix' => '<div class="number-of">',
           '#suffix' => '</div>',
@@ -544,7 +543,7 @@ class AdminForm implements AdminFormInterface {
           $num_case = wf_crm_aval($this->data, "case:number_of_case", 0);
           if ($num_case) {
             $webform_cases = [];
-            for ($i=1; $i<=$num_case; ++$i) {
+            for ($i = 1; $i <= $num_case; ++$i) {
               $webform_cases["#$i"] = t('Case :num', [':num' => $i]);
             }
             $wrap['case']["activity_{$n}_settings_case_type_id"]['#options'] = [
@@ -605,7 +604,7 @@ class AdminForm implements AdminFormInterface {
             'label' => $wrap[$num . '_fields']["civicrm_{$n}_activity_1_activity_activity_type_id"]['#options'][$type],
             'fields' => [
               'activity_survey_id' => $this->fields['activity_survey_id'],
-            ]
+            ],
           ];
         }
       }
@@ -971,7 +970,7 @@ class AdminForm implements AdminFormInterface {
       $particpant_extensions = [
         1 => 'role_id',
         2 => 'event_id',
-        3 => 'event_type'
+        3 => 'event_type',
       ];
       for ($e = 1; $e <= $num; ++$e) {
         $fs = "participant_{$n}_event_{$e}_fieldset";
@@ -1052,6 +1051,23 @@ class AdminForm implements AdminFormInterface {
           '#attributes' => ['id' => $fs, 'class' => ['web-civi-checkbox-set']],
           'js_select' => $this->addToggle($fs),
         ];
+        $aid = "civicrm_{$c}_membership_{$n}_action";
+        $this->form['membership'][$c]['membership'][$fs][$aid] = [
+          '#type' => 'select',
+          '#options' => [
+            WebformCivicrmBase::MEMBERSHIP_TYPE_ACTION_UPDATE_ANY_TYPE => t('Update any existing membership and update type'),
+            WebformCivicrmBase::MEMBERSHIP_TYPE_ACTION_UPDATE_SAME_TYPE => t('Update if exists membership of same type, if not create it'),
+            WebformCivicrmBase::MEMBERSHIP_TYPE_ACTION_ADD => t('Add always new membership'),
+          ],
+          '#title' => t('Existing Membership Type Actions'),
+          '#default_value' => $this->settings[$aid] ?? '',
+          '#description' => t('Choose the action to take for Memberships in this webform'),
+          '#attributes' => [
+            'style' => 'max-width: 450px;',
+          ],
+          '#prefix' => '<div class="form-item">',
+          '#suffix' => '</div>',
+        ];
         foreach ($this->sets as $sid => $set) {
           if ($set['entity_type'] == 'membership' && !empty($set['fields'])) {
             foreach ($set['fields'] as $fid => $field) {
@@ -1101,7 +1117,7 @@ class AdminForm implements AdminFormInterface {
     }
     // Add contribution fields
     foreach ($this->sets as $sid => $set) {
-      if ($set['entity_type'] == 'contribution' && (empty($set['sub_types']) || in_array($financialType, $set['sub_types']) )) {
+      if ($set['entity_type'] == 'contribution' && (empty($set['sub_types']) || in_array($financialType, $set['sub_types']))) {
         //Build custom fields as per financial type selected.
         if (strpos($sid, 'cg') === 0) {
           $this->form['contribution']['sets']['custom'][$sid] = [
@@ -1360,8 +1376,8 @@ class AdminForm implements AdminFormInterface {
     $this->form['additional_options']['checksum_text'] = [
       '#type' => 'item',
       '#markup' => '<p>' .
-        t('To have this form auto-filled for anonymous users, enable the "Existing Contact" field for :contact and send the following link from CiviMail:', [':contact' => $this->utils->wf_crm_contact_label(1, $this->data, 'escape')]) .
-        '<br /><pre>' . Url::fromRoute('entity.webform.canonical', ['webform' => $this->webform->id()], ['query' => ['cid1' => ''], 'absolute' => TRUE])->toString() . '{contact.contact_id}&amp;{contact.checksum}</pre></p>',
+      t('To have this form auto-filled for anonymous users, enable the "Existing Contact" field for :contact and send the following link from CiviMail:', [':contact' => $this->utils->wf_crm_contact_label(1, $this->data, 'escape')]) .
+      '<br /><pre>' . Url::fromRoute('entity.webform.canonical', ['webform' => $this->webform->id()], ['query' => ['cid1' => ''], 'absolute' => TRUE])->toString() . '{contact.contact_id}&amp;{contact.checksum}</pre></p>',
     ];
     $this->form['additional_options']['create_fieldsets'] = [
       '#type' => 'checkbox',
@@ -1457,20 +1473,20 @@ class AdminForm implements AdminFormInterface {
     if ($webform['submit_limit'] == -1) {
       $this->form['contribution']['sets']['submit_limit'] = [
         '#markup' => '<div class="messages warning">' .
-          t('To prevent Credit Card abuse, it is recommended to set the per-user submission limit for this form.') .
-          ' &nbsp; <button id="configure-submit-limit" type="button">' . t('Configure') . '</button>' .
-          '<div id="submit-limit-wrapper" style="display:none">' .
-            t('Limit each user to') .
-            ' <input class="form-text" type="number" min="1" max="99" size="2" name="submit_limit"> ' .
-            t('submission(s)') . ' <select class="form-select" name="submit_interval">' .
-              '<option value="-1">' .t('ever') . '</option>' .
-              '<option value="3600" selected="selected">' .t('every hour') . '</option>' .
-              '<option value="86400">' .t('every day') . '</option>' .
-              '<option value="604800">' .t('every week') . '</option>'.
-            '</select> &nbsp; ' .
-            ' <button id="configure-submit-limit-save" type="button">' . t('Save') . '</button>' .
-            ' <button id="configure-submit-limit-cancel" type="button">' . t('Cancel') . '</button>' .
-          '</div>' .
+        t('To prevent Credit Card abuse, it is recommended to set the per-user submission limit for this form.') .
+        ' &nbsp; <button id="configure-submit-limit" type="button">' . t('Configure') . '</button>' .
+        '<div id="submit-limit-wrapper" style="display:none">' .
+        t('Limit each user to') .
+        ' <input class="form-text" type="number" min="1" max="99" size="2" name="submit_limit"> ' .
+        t('submission(s)') . ' <select class="form-select" name="submit_interval">' .
+        '<option value="-1">' . t('ever') . '</option>' .
+        '<option value="3600" selected="selected">' . t('every hour') . '</option>' .
+        '<option value="86400">' . t('every day') . '</option>' .
+        '<option value="604800">' . t('every week') . '</option>' .
+        '</select> &nbsp; ' .
+        ' <button id="configure-submit-limit-save" type="button">' . t('Save') . '</button>' .
+        ' <button id="configure-submit-limit-cancel" type="button">' . t('Cancel') . '</button>' .
+        '</div>' .
         '</div>',
       ];
     }
@@ -1478,10 +1494,10 @@ class AdminForm implements AdminFormInterface {
     elseif (\Drupal::state()->get('webform_tracking_mode', 'cookie') == 'cookie') {
       $this->form['contribution']['sets']['webform_tracking_mode'] = [
         '#markup' => '<div class="messages warning">' .
-          t('Per-user submission limit is enabled for this form, however the webform anonymous user tracking method is configured to use cookies only, which is not secure enough to prevent Credit Card abuse.') .
-          ' <button id="webform-tracking-mode" type="button">' . t('Change Now') . '</button>' .
-          ' <input type="hidden" value="" name="webform_tracking_mode"> ' .
-        '</div>'
+        t('Per-user submission limit is enabled for this form, however the webform anonymous user tracking method is configured to use cookies only, which is not secure enough to prevent Credit Card abuse.') .
+        ' <button id="webform-tracking-mode" type="button">' . t('Change Now') . '</button>' .
+        ' <input type="hidden" value="" name="webform_tracking_mode"> ' .
+        '</div>',
       ];
     }
   }
@@ -1635,7 +1651,7 @@ class AdminForm implements AdminFormInterface {
    * @param string $class
    *   Css class to add to target container
    */
-  private function addAjaxItem($path, $control_element, $container, $class='civicrm-ajax-wrapper') {
+  private function addAjaxItem($path, $control_element, $container, $class = 'civicrm-ajax-wrapper') {
     // Get a reference to the control container
     // For anyone who wants to call this evil - I challenge you to find a better way to accomplish this
     eval('$control_container = &$this->form[\'' . str_replace(':', "']['", $path) . "'];");
@@ -1670,8 +1686,9 @@ class AdminForm implements AdminFormInterface {
    *   The build information.
    */
   private function addToggle($name) {
-    return ['#markup' =>
-    '<div class="web-civi-js-select">
+    return [
+      '#markup' =>
+      '<div class="web-civi-js-select">
       <a class="all" href="#">' . t('Select All') . '</a> |
       <a class="none" href="#">' . t('Select None') . '</a> |
       <a class="reset" href="#">' . t('Restore') . '</a>
@@ -1696,10 +1713,10 @@ class AdminForm implements AdminFormInterface {
         $this->data['contact'][$c] = [
           'contact' => [
             1 => [
-            'contact_type' => $contact_type,
-            'contact_sub_type' => [],
-            'webform_label' => $this->settings[$c . '_webform_label'],
-            ]
+              'contact_type' => $contact_type,
+              'contact_sub_type' => [],
+              'webform_label' => $this->settings[$c . '_webform_label'],
+            ],
           ],
         ];
         $sub_type = $this->settings["civicrm_{$c}_contact_1_contact_contact_sub_type"] ?? NULL;
@@ -1717,9 +1734,9 @@ class AdminForm implements AdminFormInterface {
         $this->data['contact'][$c] = [
           'contact' => [
             1 => [
-            'contact_type' => 'individual',
-            'contact_sub_type' => [],
-            ]
+              'contact_type' => 'individual',
+              'contact_sub_type' => [],
+            ],
           ],
           'matching_rule' => 'Unsupervised',
         ];
@@ -1760,13 +1777,13 @@ class AdminForm implements AdminFormInterface {
       }
     }
     // Defaults when adding an activity
-    for ($i=1; $i <= $this->settings['activity_number_of_activity']; ++$i) {
+    for ($i = 1; $i <= $this->settings['activity_number_of_activity']; ++$i) {
       if (!isset($this->settings["activity_{$i}_settings_existing_activity_status"])) {
         $this->data['activity'][$i]['activity'][1]['target_contact_id'] = range(1, $this->settings['number_of_contacts']);
       }
     }
     // Defaults when adding a case
-    for ($i=1, $iMax = wf_crm_aval($this->settings, 'case_number_of_case'); $i <= $iMax; ++$i) {
+    for ($i = 1, $iMax = wf_crm_aval($this->settings, 'case_number_of_case'); $i <= $iMax; ++$i) {
       if (!isset($this->settings["civicrm_{$i}_case_1_case_case_type_id"])) {
         $case_types = array_keys($this->utils->wf_crm_apivalues('Case', 'getoptions', ['field' => 'case_type_id']));
         $this->data['case'][$i]['case'][1]['case_type_id'] = $case_types[0];
@@ -1901,10 +1918,10 @@ class AdminForm implements AdminFormInterface {
     // @todo there is no disabled?
     /*
     foreach (wf_crm_aval($this->node->webform, 'components', array()) as $field) {
-      if (substr($field['form_key'], 0, 9) === 'disabled_') {
-        $field['form_key'] = 'civicrm' . substr($field['form_key'], 8);
-        $disabled[$field['form_key']] = $field;
-      }
+    if (substr($field['form_key'], 0, 9) === 'disabled_') {
+    $field['form_key'] = 'civicrm' . substr($field['form_key'], 8);
+    $disabled[$field['form_key']] = $field;
+    }
     }*/
 
     $i = 0;
@@ -1936,13 +1953,13 @@ class AdminForm implements AdminFormInterface {
               ];
               // Cannot use isNewFieldset effectively.
               $previous_data = $handler_configuration['settings'];
-              list(, $c, $ent) =  $this->utils->wf_crm_explode_key($key);
+              list(, $c, $ent) = $this->utils->wf_crm_explode_key($key);
               $type = in_array($ent, self::$fieldset_entities) ? $ent : 'contact';
               $create = !isset($previous_data['data'][$type][$c]);
               /*
-  list(, $c, $ent) =  wf_crm_explode_key($field_key);
-  $type = in_array($ent, self::$fieldset_entities) ? $ent : 'contact';
-  return !isset($this->node->webform_civicrm['data'][$type][$c]);
+              list(, $c, $ent) =  wf_crm_explode_key($field_key);
+              $type = in_array($ent, self::$fieldset_entities) ? $ent : 'contact';
+              return !isset($this->node->webform_civicrm['data'][$type][$c]);
                */
               // @todo Properly handle fieldset creation.
               // self::insertComponent($field, $enabled, $this->settings, !isset($previous_data['data'][$type][$c]));
@@ -1975,7 +1992,7 @@ class AdminForm implements AdminFormInterface {
       // add empty fieldsets for custom civicrm sets with no fields, if "add dynamically" is checked
       elseif (strpos($key, 'settings_dynamic_custom') && $val == 1) {
         $emptySets = $this->utils->wf_crm_get_empty_sets();
-        list($ent, $n, , , ,$cgId) = explode('_', $key, 6);
+        list($ent, $n, , , , $cgId) = explode('_', $key, 6);
         $fieldsetKey = "civicrm_{$n}_{$ent}_1_{$cgId}_fieldset";
         if (array_key_exists($cgId, $emptySets) && !isset($existing[$fieldsetKey])) {
           $fieldset = [
@@ -2007,7 +2024,7 @@ class AdminForm implements AdminFormInterface {
     // Update existing contact fields
     foreach ($existing as $fid => $id) {
       if (substr($fid, -8) === 'existing') {
-        $stop = null;
+        $stop = NULL;
       }
     }
   }
@@ -2085,7 +2102,7 @@ class AdminForm implements AdminFormInterface {
       $newElements = [];
       foreach ($elements as $key => &$element) {
         if ($key != 'contact_pagebreak') {
-          if (strpos($key, 'civicrm_1_contact') !== false && !isset($newElements['contact_pagebreak'])) {
+          if (strpos($key, 'civicrm_1_contact') !== FALSE && !isset($newElements['contact_pagebreak'])) {
             $newElements['contact_pagebreak'] = $elements['contact_pagebreak'];
           }
           $newElements[$key] = $element;
@@ -2093,7 +2110,7 @@ class AdminForm implements AdminFormInterface {
       }
       $elements = $newElements;
       foreach ($elements as $key => &$element) {
-        if ((strpos($key, 'civicrm_1_contact') === false)
+        if ((strpos($key, 'civicrm_1_contact') === FALSE)
           || isset($element['#parent']) || !empty($element['#webform_parent_key'])
           || empty($element['#type']) || $element['#type'] == 'webform_wizard_page') {
           continue;
@@ -2117,7 +2134,7 @@ class AdminForm implements AdminFormInterface {
           'type' => 'webform_wizard_page',
           'form_key' => 'contact_pagebreak',
           'title' => $contactPageElement['#title'] ?? (string) t('Contact Information'),
-        ]
+        ],
       ], $enabled);
     }
     foreach ($enabled as $key => &$element) {
@@ -2319,8 +2336,8 @@ class AdminForm implements AdminFormInterface {
     if (empty($enabled[$field['form_key']]) && ($ent !== 'contribution' &&
       ($ent !== 'participant' || wf_crm_aval($settings['data'], 'participant_reg_type') === 'separate'))
     ) {
-       $fieldset_key = self::addFieldset($c, $field, $enabled, $settings, $ent, $create_fieldsets);
-       $field['parent'] = $fieldset_key;
+      $fieldset_key = self::addFieldset($c, $field, $enabled, $settings, $ent, $create_fieldsets);
+      $field['parent'] = $fieldset_key;
     }
     // Create page break for contribution
     if ($name === 'enable_contribution') {
@@ -2405,11 +2422,11 @@ class AdminForm implements AdminFormInterface {
   /**
    * Return payment processor id as per is_test flag set on the webform.
    *
-   * @param int $ppId.
+   * @param int $ppId
    *  Payment Processor ID.
    *
    * @return int
-   *  id of the payment processor as per is_test flag.
+   *   id of the payment processor as per is_test flag.
    */
   protected function getPaymentProcessorValue($ppId) {
     $pName = $this->utils->wf_civicrm_api('PaymentProcessor', 'getvalue', [
@@ -2596,4 +2613,5 @@ class AdminForm implements AdminFormInterface {
       $webform->save();
     }
   }
+
 }

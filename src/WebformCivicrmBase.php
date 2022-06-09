@@ -34,14 +34,23 @@ abstract class WebformCivicrmBase {
   protected $loadedContacts = [];
   protected $editingSubmission;
 
-  // No direct access - storage for variables fetched via __get
+  /**
+   * No direct access - storage for variables fetched via __get
+   */
   private $_payment_processor;
-  // tax integration
+  /**
+   * tax integration
+   */
   private $_tax_rate;
 
   const
     MULTIVALUE_FIELDSET_MODE_CREATE_OR_EDIT = 0,
     MULTIVALUE_FIELDSET_MODE_CREATE_ONLY = 1;
+
+  const
+    MEMBERSHIP_TYPE_ACTION_UPDATE_ANY_TYPE = 0,
+    MEMBERSHIP_TYPE_ACTION_UPDATE_SAME_TYPE = 1,
+    MEMBERSHIP_TYPE_ACTION_ADD = 2;
 
   /**
    * Magic method to retrieve otherwise inaccessible properties
@@ -49,7 +58,7 @@ abstract class WebformCivicrmBase {
    * @throws Exception
    * @return mixed
    */
-  function __get($name) {
+  public function __get($name) {
     switch ($name) {
       case 'payment_processor':
         $payment_processor_id = wf_crm_aval($this->data, 'contribution:1:contribution:1:payment_processor_id');
@@ -189,7 +198,7 @@ abstract class WebformCivicrmBase {
                 $address['state_province_id'] = $this->utils->wf_crm_state_abbr($address['state_province_id']);
               }
               // Load custom data
-              if (isset($address['id'])){
+              if (isset($address['id'])) {
                 $custom = $this->getCustomData($address['id'], 'address');
                 if (!empty($custom['address'])) {
                   $address += $custom['address'][1];
@@ -290,17 +299,20 @@ abstract class WebformCivicrmBase {
           $cid = $this->utils->wf_crm_user_cid();
           $found = ($c == 1 && $cid) ? [$cid] : [];
           break;
+
         case 'contact_id':
           if (isset($component['#default_contact_id'])) {
             $found = [$component['#default_contact_id']];
           }
           break;
+
         case 'relationship':
           $to = $component['#default_relationship_to'];
           if (!empty($component['#default_relationship']) && !empty($this->ent['contact'][$to]['id'])) {
             $found = $contactComponent->wf_crm_find_relations($this->ent['contact'][$to]['id'], $component['#default_relationship']);
           }
           break;
+
         case 'auto':
           $component['#allow_create'] = FALSE;
           $found = array_keys($contactComponent->wf_crm_contact_search($this->node, $component, $filters, wf_crm_aval($this->ent, 'contact', [])));
@@ -318,7 +330,7 @@ abstract class WebformCivicrmBase {
       foreach ($found as $cid) {
         // Don't pick the same contact twice unless explicitly told to do so
         if (!$dupes_allowed) {
-          foreach($this->ent['contact'] as $contact) {
+          foreach ($this->ent['contact'] as $contact) {
             if (!empty($contact['id']) && $cid == $contact['id']) {
               continue 2;
             }
@@ -341,10 +353,10 @@ abstract class WebformCivicrmBase {
    * @param array $values
    * @return array $reorderedArray
    */
-  protected function reorderByLocationType($c, $ent, $values = []){
+  protected function reorderByLocationType($c, $ent, $values = []) {
     $reorderedArray = [];
 
-    if (isset($this->settings['data']['contact'][$c][$ent])){
+    if (isset($this->settings['data']['contact'][$c][$ent])) {
       // First pass
       if ($ent == 'website') {
         $reorderedArray = $this->matchWebsiteTypes($c, $ent, $values);
@@ -356,7 +368,8 @@ abstract class WebformCivicrmBase {
       $reorderedArray = $this->handleRemainingValues($reorderedArray, $values);
 
       return $reorderedArray;
-    } else {
+    }
+    else {
       return $values;
     }
   }
@@ -369,7 +382,7 @@ abstract class WebformCivicrmBase {
    * @param array $values
    * @return array $reorderedArray
    */
-  protected function matchLocationTypes($c, $ent, &$values){
+  protected function matchLocationTypes($c, $ent, &$values) {
     // create temporary settings array to include 'user-select' fields
     // on the right place in array
     $settingsArray = $this->add_user_select_field_placeholder($ent, $this->settings['data']['contact'][$c]);
@@ -377,34 +390,34 @@ abstract class WebformCivicrmBase {
     // Go through the array and match up locations by type
     // Put placeholder 'user-select' where location_type_id is empty for second pass
     foreach ($settingsArray[$ent] as $setting) {
-      $valueFound = false;
-      foreach($values as $key => $value){
+      $valueFound = FALSE;
+      foreach ($values as $key => $value) {
         if ((in_array($ent, ['address', 'email']) && $value['location_type_id'] == $setting['location_type_id'])
             || (
               $value['location_type_id'] == $setting['location_type_id'] &&
               (
-                !isset($setting[$ent.'_type_id']) ||
-                (isset($value[$ent.'_type_id'])) && $value[$ent.'_type_id'] == $setting[$ent.'_type_id']
+                !isset($setting[$ent . '_type_id']) ||
+                (isset($value[$ent . '_type_id'])) && $value[$ent . '_type_id'] == $setting[$ent . '_type_id']
               )
             )
         ) {
-            $reorderedArray[$key] = $value;
-            $valueFound = true;
-            unset($values[$key]);
-            break;
+          $reorderedArray[$key] = $value;
+          $valueFound = TRUE;
+          unset($values[$key]);
+          break;
         }
         // For 'user-select' fields
-        else if (empty($setting['location_type_id'])) {
-          $valueFound = true;
-          $reorderedArray['us'.$userSelectIndex] = 'user-select';
-          $userSelectIndex ++;
+        elseif (empty($setting['location_type_id'])) {
+          $valueFound = TRUE;
+          $reorderedArray['us' . $userSelectIndex] = 'user-select';
+          $userSelectIndex++;
           break;
         }
       }
 
       // always keep number of returned values equal to chosen settings
       // if value is not found then set an empty array
-      if (!$valueFound){
+      if (!$valueFound) {
         $reorderedArray[] = [];
       }
     }
@@ -437,7 +450,8 @@ abstract class WebformCivicrmBase {
           break;
         }
         else {
-          if (empty($setting['website_type_id'])) { // for 'user-select' fields
+          // for 'user-select' fields
+          if (empty($setting['website_type_id'])) {
             $valueFound = TRUE;
             $reorderedArray['us' . $userSelectIndex] = 'user-select';
             $userSelectIndex++;
@@ -448,7 +462,7 @@ abstract class WebformCivicrmBase {
 
       // always keep number of returned values equal to chosen settings
       // if value is not found then set an empty array
-      if (!$valueFound){
+      if (!$valueFound) {
         $reorderedArray[] = [];
       }
     }
@@ -462,10 +476,10 @@ abstract class WebformCivicrmBase {
    * @param array $values
    * @return array $reorderedArray
    */
-  protected function handleRemainingValues($reorderedArray, &$values){
+  protected function handleRemainingValues($reorderedArray, &$values) {
     // Put leftover values in fields marked as 'user-select'
-    foreach($reorderedArray as $key => $value){
-      if ($reorderedArray[$key] == 'user-select'){
+    foreach ($reorderedArray as $key => $value) {
+      if ($reorderedArray[$key] == 'user-select') {
         $reorderedArray[$key] = !empty($values) ? array_shift($values) : '';
       }
     }
@@ -479,10 +493,10 @@ abstract class WebformCivicrmBase {
    * @param array $settings
    * @return array $settings
    */
-  protected function add_user_select_field_placeholder($ent, $settings = []){
-    if ($settings['number_of_'.$ent] > count($settings[$ent])){
-      for($i = 1; $i <= $settings['number_of_'.$ent]; $i++){
-        if (!array_key_exists($i, $settings[$ent])){
+  protected function add_user_select_field_placeholder($ent, $settings = []) {
+    if ($settings['number_of_' . $ent] > count($settings[$ent])) {
+      for ($i = 1; $i <= $settings['number_of_' . $ent]; $i++) {
+        if (!array_key_exists($i, $settings[$ent])) {
           $settings[$ent][$i]['location_type_id'] = NULL;
         }
       }
@@ -708,7 +722,7 @@ abstract class WebformCivicrmBase {
    */
   protected function getData($fid, $default = NULL, $strict = FALSE) {
     if ($pieces = $this->utils->wf_crm_explode_key($fid)) {
-      list( , $c, $ent, $n, $table, $name) = $pieces;
+      list(, $c, $ent, $n, $table, $name) = $pieces;
       return wf_crm_aval($this->data, "{$ent}:{$c}:{$table}:{$n}:{$name}", $default, $strict);
     }
   }
@@ -723,13 +737,13 @@ abstract class WebformCivicrmBase {
    * @param array $filters
    * @return null|array
    */
-  function findCaseForContact($cid, $filters) {
+  public function findCaseForContact($cid, $filters) {
     $case = NULL;
     foreach ($this->utils->wf_crm_apivalues('case', 'get', ['client_id' => $cid]) as $item) {
       if (empty($item['is_deleted'])) {
         $match = TRUE;
         foreach (array_filter($filters) as $filter => $value) {
-          if (!array_intersect((array)$item[$filter], (array)$value)) {
+          if (!array_intersect((array) $item[$filter], (array) $value)) {
             $match = FALSE;
           }
         }
@@ -759,7 +773,7 @@ abstract class WebformCivicrmBase {
    *
    * @return void
    */
-  function addPaymentJs() {
+  public function addPaymentJs() {
     $currentVer = \CRM_Core_BAO_Domain::version();
     if (version_compare($currentVer, '5.8') <= 0 && method_exists('CRM_Core_Payment_Form', 'getCreditCardCSSNames')) {
       $credit_card_types = \CRM_Core_Payment_Form::getCreditCardCSSNames();
@@ -804,7 +818,7 @@ abstract class WebformCivicrmBase {
    * @param int|null $n: entity id
    * @return array|null
    */
-  function getFileInfo($fieldName, $val, $entity, $n) {
+  public function getFileInfo($fieldName, $val, $entity, $n) {
     if (!$val) {
       return NULL;
     }
@@ -823,7 +837,7 @@ abstract class WebformCivicrmBase {
       return [
         'data_type' => 'File',
         'name' => $file[$val]['name'],
-        'file_url'=> $file[$val]['url'],
+        'file_url' => $file[$val]['url'],
         'icon' => file_icon_class($file[$val]['mime_type']),
       ];
     }
@@ -838,7 +852,7 @@ abstract class WebformCivicrmBase {
    * @return mixed
    *   An array of the file entity or empty string.
    */
-  function getDrupalFileUrl($id) {
+  public function getDrupalFileUrl($id) {
     if ($id = $this->saveDrupalFileToCivi($id)) {
       $config = \CRM_Core_Config::singleton();
       $result = $this->utils->wf_civicrm_api('file', 'getsingle', ['id' => $id]);
@@ -885,7 +899,7 @@ abstract class WebformCivicrmBase {
    *
    * @return array
    */
-  function getWebformDefaults() {
+  public function getWebformDefaults() {
     $utils = \Drupal::service('webform_civicrm.utils');
     $defaults = [];
     $elements = $this->node->getElementsDecodedAndFlattened();
