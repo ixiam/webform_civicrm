@@ -10,7 +10,7 @@
 /**
  * The versions of CiviCRM and WebForm. Min is >=.  Max is <. FALSE = no MAX
  */
-define('WEBFORM_CIVICRM_CIVICRM_VERSION_MIN', '5.12');
+define('WEBFORM_CIVICRM_CIVICRM_VERSION_MIN', '5.51');
 define('WEBFORM_CIVICRM_CIVICRM_VERSION_MAX', FALSE);
 
 define('WEBFORM_CIVICRM_WEBFORM_VERSION', '4.19');

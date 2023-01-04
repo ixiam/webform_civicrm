@@ -2159,8 +2159,10 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       if (empty($item['contribution_id'])) {
         $item['contribution_id'] = $id;
       }
+      $priceSetId = 'default_contribution_amount';
       // Membership
       if (!empty($item['membership_id'])) {
+        $priceSetId = 'default_membership_type_amount';
         $item['entity_id'] = $item['membership_id'];
         $lineItemArray = wf_civicrm_api('LineItem', 'get', [
           'entity_table' => "civicrm_membership",
@@ -2179,10 +2181,11 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
         }
       }
 
-      // Format (and round) monetary values before saving the line items
-      isset($item['unit_price']) ? $item['unit_price'] = CRM_Utils_Money::format($item['unit_price'], NULL, NULL, TRUE) : NULL;
-      isset($item['line_total']) ? $item['line_total'] = CRM_Utils_Money::format($item['line_total'], NULL, NULL, TRUE) : NULL;
-      isset($item['tax_amount']) ? $item['tax_amount'] = CRM_Utils_Money::format($item['tax_amount'], NULL, NULL, TRUE) : NULL;
+      $item['price_field_id'] = wf_civicrm_api('PriceField', 'get', [
+        'sequential' => 1,
+        'price_set_id' => $priceSetId,
+        'options' => ['limit' => 1],
+      ])['id'] ?? NULL;
 
       // Save the line_item
       $line_result = wf_civicrm_api('line_item', 'create', $item);
